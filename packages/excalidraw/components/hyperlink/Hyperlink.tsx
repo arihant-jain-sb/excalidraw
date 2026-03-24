@@ -22,7 +22,6 @@ import {
   sceneCoordsToViewportCoords,
   viewportCoordsToSceneCoords,
   wrapEvent,
-  isLocalLink,
   normalizeLink,
 } from "@excalidraw/common";
 
@@ -282,7 +281,7 @@ export const Hyperlink = ({
         <a
           href={normalizeLink(element.link || "")}
           className="excalidraw-hyperlinkContainer-link"
-          target={isLocalLink(element.link) ? "_self" : "_blank"}
+          target="_blank"
           onClick={(event) => {
             if (element.link && onLinkOpen) {
               const customEvent = wrapEvent(

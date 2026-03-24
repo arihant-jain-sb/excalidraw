@@ -192,6 +192,26 @@ describe("exportToSvg", () => {
     );
     expect(svgElement.innerHTML).toMatchSnapshot();
   });
+
+  it("renders underlined blue linked text", async () => {
+    const linkedText = {
+      ...textFixture,
+      text: "Docs",
+      originalText: "Docs",
+      link: "https://example.com",
+      index: "a5" as FractionalIndex,
+    } as ExcalidrawTextElement;
+
+    const svgElement = await exportUtils.exportToSvg(
+      [linkedText],
+      DEFAULT_OPTIONS,
+      null,
+    );
+    const text = svgElement.querySelector("text");
+    expect(text).not.toBeNull();
+    expect(text!.getAttribute("fill")).toBe("#1976d2");
+    expect(text!.getAttribute("text-decoration")).toBe("underline");
+  });
 });
 
 describe("exporting frames", () => {

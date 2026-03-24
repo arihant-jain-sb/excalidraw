@@ -24,6 +24,7 @@ import {
   invariant,
   applyDarkModeFilter,
   isSafari,
+  normalizeLink,
 } from "@excalidraw/common";
 
 import type {
@@ -545,6 +546,8 @@ const drawElementOnCanvas = (
     }
     default: {
       if (isTextElement(element)) {
+        const link = normalizeLink(element.link || "");
+        const hasLink = !!link;
         const rtl = isRTL(element.text);
         const shouldTemporarilyAttach = rtl && !context.canvas.isConnected;
         if (shouldTemporarilyAttach) {
@@ -555,8 +558,9 @@ const drawElementOnCanvas = (
         context.canvas.setAttribute("dir", rtl ? "rtl" : "ltr");
         context.save();
         context.font = getFontString(element);
-        context.fillStyle =
-          renderConfig.theme === THEME.DARK
+        context.fillStyle = hasLink
+          ? "#1976d2"
+          : renderConfig.theme === THEME.DARK
             ? applyDarkModeFilter(element.strokeColor)
             : element.strokeColor;
         context.textAlign = element.textAlign as CanvasTextAlign;
@@ -583,11 +587,29 @@ const drawElementOnCanvas = (
         );
 
         for (let index = 0; index < lines.length; index++) {
+          const textY = index * lineHeightPx + verticalOffset;
           context.fillText(
             lines[index],
             horizontalOffset,
-            index * lineHeightPx + verticalOffset,
+            textY,
           );
+
+          if (hasLink) {
+            const textWidth = context.measureText(lines[index]).width;
+            const underlineY = textY + Math.max(1, element.fontSize * 0.08);
+            const underlineStartX =
+              element.textAlign === "center"
+                ? horizontalOffset - textWidth / 2
+                : element.textAlign === "right"
+                  ? horizontalOffset - textWidth
+                  : horizontalOffset;
+            context.beginPath();
+            context.moveTo(underlineStartX, underlineY);
+            context.lineTo(underlineStartX + textWidth, underlineY);
+            context.lineWidth = Math.max(1, element.fontSize * 0.05);
+            context.strokeStyle = "#1976d2";
+            context.stroke();
+          }
         }
         context.restore();
         if (shouldTemporarilyAttach) {

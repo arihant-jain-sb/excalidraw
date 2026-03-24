@@ -123,6 +123,8 @@ const renderElementToSvg = (
   if (element.link) {
     const anchorTag = svgRoot.ownerDocument.createElementNS(SVG_NS, "a");
     anchorTag.setAttribute("href", normalizeLink(element.link));
+    anchorTag.setAttribute("target", "_blank");
+    anchorTag.setAttribute("rel", "noopener noreferrer");
     root.appendChild(anchorTag);
     root = anchorTag;
   }
@@ -634,6 +636,8 @@ const renderElementToSvg = (
     default: {
       if (isTextElement(element)) {
         const node = svgRoot.ownerDocument.createElementNS(SVG_NS, "g");
+        const link = normalizeLink(element.link || "");
+        const hasLink = !!link;
         if (opacity !== 1) {
           node.setAttribute("stroke-opacity", `${opacity}`);
           node.setAttribute("fill-opacity", `${opacity}`);
@@ -677,11 +681,16 @@ const renderElementToSvg = (
           text.setAttribute("font-size", `${element.fontSize}px`);
           text.setAttribute(
             "fill",
-            renderConfig.theme === THEME.DARK
-              ? applyDarkModeFilter(element.strokeColor)
-              : element.strokeColor,
+            hasLink
+              ? "#1976d2"
+              : renderConfig.theme === THEME.DARK
+                ? applyDarkModeFilter(element.strokeColor)
+                : element.strokeColor,
           );
           text.setAttribute("text-anchor", textAnchor);
+          if (hasLink) {
+            text.setAttribute("text-decoration", "underline");
+          }
           text.setAttribute("style", "white-space: pre;");
           text.setAttribute("direction", direction);
           text.setAttribute("dominant-baseline", "alphabetic");
