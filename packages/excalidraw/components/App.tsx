@@ -450,6 +450,7 @@ import { isSidebarDockedAtom } from "./Sidebar/Sidebar";
 import { StaticCanvas, InteractiveCanvas } from "./canvases";
 import NewElementCanvas from "./canvases/NewElementCanvas";
 import { isPointHittingLink } from "./hyperlink/helpers";
+import { parseMarkdownLink } from "./hyperlink/parseMarkdownLink";
 import { MagicIcon, copyIcon, fullscreenIcon } from "./icons";
 import { AppStateObserver, type OnStateChange } from "./AppStateObserver";
 
@@ -5676,21 +5677,43 @@ class App extends React.Component<AppProps, AppState> {
     },
   ) {
     const elementsMap = this.scene.getElementsMapIncludingDeleted();
+    const initialContainer = getContainerElement(element, elementsMap);
 
     const updateElement = (nextOriginalText: string, isDeleted: boolean) => {
+      const parsedMarkdownLink = parseMarkdownLink(nextOriginalText);
+      const normalizedMarkdownLink = parsedMarkdownLink
+        ? normalizeLink(parsedMarkdownLink.url)
+        : null;
+      const textForDimensions = parsedMarkdownLink
+        ? parsedMarkdownLink.label
+        : nextOriginalText;
+
       this.scene.replaceAllElements([
         // Not sure why we include deleted elements as well hence using deleted elements map
         ...this.scene.getElementsIncludingDeleted().map((_element) => {
+          if (
+            parsedMarkdownLink &&
+            initialContainer &&
+            _element.id === initialContainer.id
+          ) {
+            return newElementWith(_element, {
+              link: normalizedMarkdownLink,
+            });
+          }
+
           if (_element.id === element.id && isTextElement(_element)) {
             return newElementWith(_element, {
-              originalText: nextOriginalText,
+              originalText: textForDimensions,
               isDeleted: isDeleted ?? _element.isDeleted,
+              link: parsedMarkdownLink
+                ? normalizedMarkdownLink
+                : _element.link,
               // returns (wrapped) text and new dimensions
               ...refreshTextDimensions(
                 _element,
                 getContainerElement(_element, elementsMap),
                 elementsMap,
-                nextOriginalText,
+                textForDimensions,
               ),
             });
           }
@@ -6656,8 +6679,7 @@ class App extends React.Component<AppProps, AppState> {
           );
         }
         if (!customEvent?.defaultPrevented) {
-          const target = isLocalLink(url) ? "_self" : "_blank";
-          const newWindow = window.open(undefined, target);
+          const newWindow = window.open(undefined, "_blank");
           // https://mathiasbynens.github.io/rel-noopener/
           if (newWindow) {
             newWindow.opener = null;
